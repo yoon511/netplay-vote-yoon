@@ -10,7 +10,6 @@ import {
   doc,
   updateDoc,
   addDoc,
-  deleteDoc,
   Timestamp,
 } from "firebase/firestore";
 
@@ -28,16 +27,16 @@ export default function Home() {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
 
-  // 🔥 관리자 설정
+  // 관리자 설정
   const ADMIN_PASS = "yoon511";
   const [adminMode, setAdminMode] = useState(false);
   const [adminInput, setAdminInput] = useState("");
 
-  // 🔥 로그 데이터
+  // 로그
   const [logs, setLogs] = useState<any[]>([]);
   const [openedPollId, setOpenedPollId] = useState("");
 
-  // ▼ 모임 목록 로드
+  // 실시간 모임 목록
   useEffect(() => {
     const q = query(collection(db, "polls"), orderBy("date", "asc"));
     const unsub = onSnapshot(q, (snap) => {
@@ -48,7 +47,7 @@ export default function Home() {
     return () => unsub();
   }, []);
 
-  // ▼ 특정 모임 로그 로드
+  // 로그 실시간 로드
   useEffect(() => {
     if (!openedPollId) return;
     const ref = collection(db, "polls", openedPollId, "logs");
@@ -62,7 +61,7 @@ export default function Home() {
     return () => unsub();
   }, [openedPollId]);
 
-  // ▼ 로그 기록
+  // 로그 기록
   async function addLog(type: string, pollId: string, userName: string) {
     await addDoc(collection(db, "polls", pollId, "logs"), {
       type,
@@ -71,13 +70,12 @@ export default function Home() {
     });
   }
 
-  // ▼ 참가하기
+  // 참가하기
   async function handleJoin(poll: any) {
     if (!name || !password) return alert("이름과 비밀번호를 입력하세요.");
     if (password.length !== 4) return alert("비밀번호는 숫자 4자리입니다.");
 
     const ref = doc(db, "polls", poll.id);
-
     const participants = poll.participants || [];
     const waitlist = poll.waitlist || [];
     const user = { name, pass: password };
@@ -97,28 +95,30 @@ export default function Home() {
     await addLog("join", poll.id, name);
   }
 
-  // ▼ 취소 (확인 팝업)
+  // 취소하기 (팝업)
   async function confirmCancel(poll: any) {
     if (!confirm("정말 취소하시겠습니까?")) return;
     handleCancel(poll);
   }
 
-  // ▼ 취소 처리
+  // 실제 취소 처리
   async function handleCancel(poll: any) {
     const ref = doc(db, "polls", poll.id);
-
     let participants = poll.participants || [];
     let waitlist = poll.waitlist || [];
 
-    const inP = participants.find((p: any) => p.name === name && p.pass === password);
-    const inW = waitlist.find((p: any) => p.name === name && p.pass === password);
+    const inP = participants.find(
+      (p: any) => p.name === name && p.pass === password
+    );
+    const inW = waitlist.find(
+      (p: any) => p.name === name && p.pass === password
+    );
 
     if (inP) {
       participants = participants.filter(
         (p: any) => !(p.name === name && p.pass === password)
       );
 
-      // 자동 승급
       if (waitlist.length > 0) {
         const next = waitlist[0];
         waitlist = waitlist.slice(1);
@@ -143,9 +143,16 @@ export default function Home() {
     alert("참석 정보가 없습니다.");
   }
 
-  // ▼ 관리자 강제 삭제 기능
-  async function forceRemoveUser(poll: any, target: any, type: "participant" | "waitlist") {
+  // 🔥 관리자 강제삭제 + 확인 팝업 포함
+  async function forceRemoveUser(
+    poll: any,
+    target: any,
+    type: "participant" | "waitlist"
+  ) {
     if (!adminMode) return alert("관리자만 가능합니다.");
+
+    const ok = confirm(`정말 "${target.name}" 님을 강제 삭제하시겠습니까?`);
+    if (!ok) return;
 
     const ref = doc(db, "polls", poll.id);
     let participants = poll.participants || [];
@@ -159,9 +166,11 @@ export default function Home() {
 
     await updateDoc(ref, { participants, waitlist });
     await addLog("admin_remove", poll.id, target.name);
+
+    alert(`"${target.name}" 님이 강제 삭제되었습니다.`);
   }
 
-  // ▼ 관리자 로그인
+  // 관리자 로그인
   function loginAdmin() {
     if (adminInput === ADMIN_PASS) {
       setAdminMode(true);
@@ -177,7 +186,9 @@ export default function Home() {
 
         {/* 로고 */}
         <div className="flex items-center gap-2 mb-6">
-          <span className="text-xl font-bold text-red-400">Netplay 참석 투표 - 윤</span>
+          <span className="text-xl font-bold text-red-400">
+            Netplay 참석 투표 - 윤
+          </span>
           <span className="text-xl">🏸</span>
         </div>
 
@@ -201,7 +212,7 @@ export default function Home() {
           />
         </div>
 
-        {/* 모임 리스트 */}
+        {/* ▼ 모임 리스트 */}
         {polls.map((poll) => (
           <div key={poll.id} className="bg-white rounded-2xl shadow mb-6 p-4">
 
@@ -211,11 +222,12 @@ export default function Home() {
               🕒 {poll.time} · 💰 {poll.fee}
             </div>
             <div className="text-sm text-gray-700">{poll.location}</div>
+
             <div className="text-xs text-gray-600 mt-1 mb-3">
               정원 {poll.capacity}명 중 {poll.participants?.length || 0}명 참여
             </div>
 
-            {/* 참여/취소 버튼 */}
+            {/* 버튼 */}
             <div className="flex gap-2 mb-4">
               <button
                 onClick={() => handleJoin(poll)}
@@ -232,12 +244,11 @@ export default function Home() {
               </button>
             </div>
 
-            {/* 참여자 목록 */}
+            {/* 참여자 */}
             <Expandable title={`참여자 (${poll.participants?.length || 0})`}>
               {(poll.participants || []).map((p: any, idx: number) => (
                 <li key={idx} className="flex justify-between">
                   {p.name}
-
                   {adminMode && (
                     <button
                       onClick={() => forceRemoveUser(poll, p, "participant")}
@@ -255,7 +266,6 @@ export default function Home() {
               {(poll.waitlist || []).map((w: any, idx: number) => (
                 <li key={idx} className="flex justify-between">
                   대기 {idx + 1}. {w.name}
-
                   {adminMode && (
                     <button
                       onClick={() => forceRemoveUser(poll, w, "waitlist")}
@@ -268,10 +278,12 @@ export default function Home() {
               ))}
             </Expandable>
 
-            {/* 로그 보기 (관리자만) */}
+            {/* 로그 보기 버튼 */}
             {adminMode && (
               <button
-                onClick={() => setOpenedPollId(openedPollId === poll.id ? "" : poll.id)}
+                onClick={() =>
+                  setOpenedPollId(openedPollId === poll.id ? "" : poll.id)
+                }
                 className="text-xs text-blue-600 underline mt-2"
               >
                 로그 보기
@@ -289,7 +301,7 @@ export default function Home() {
                         ? "text-red-500"
                         : log.type === "promote"
                         ? "text-blue-500"
-                        : "text-black"
+                        : log.type === "black"
                     }
                   >
                     ● [{log.type}] {log.name} —{" "}
@@ -308,9 +320,9 @@ export default function Home() {
               <input
                 placeholder="관리자 비밀번호"
                 type="password"
-                className="w-full p-2 border rounded-xl mb-2"
                 value={adminInput}
                 onChange={(e) => setAdminInput(e.target.value)}
+                className="w-full p-2 border rounded-xl mb-2"
               />
 
               <button
