@@ -294,20 +294,20 @@ export default function Home() {
             {adminMode && openedPollId === poll.id && (
               <div className="mt-3 bg-gray-50 p-3 rounded-xl text-xs">
                 {logs.map((log, i) => (
-                  <div
-                    key={i}
-                    className={
-                      log.type === "cancel"
-                        ? "text-red-500"
-                        : log.type === "promote"
-                        ? "text-blue-500"
-                        : log.type === "black"
-                    }
-                  >
-                    ● [{log.type}] {log.name} —{" "}
-                    {log.time.toDate().toLocaleString("ko-KR")}
-                  </div>
-                ))}
+  <div
+    key={i}
+    className={
+      log.type === "cancel"
+        ? "text-red-500"
+        : log.type === "promote"
+        ? "text-blue-500"
+        : "text-black"
+    }
+  >
+    ● [{log.type}] {log.name} — {log.time.toDate().toLocaleString("ko-KR")}
+  </div>
+))}
+
               </div>
             )}
           </div>
