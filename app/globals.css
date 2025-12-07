@@ -1,7 +1,12 @@
 @import "tailwindcss";
 
+/* 🎨 항상 라이트모드 사용 */
 :root {
-  --background: #ffffff;
+  /* 다크모드 영향 없음 */
+  color-scheme: light;
+
+  /* 기본 색상 (너가 원하는 밝은 느낌) */
+  --background: #fdfbf6;
   --foreground: #171717;
 }
 
@@ -12,15 +17,20 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* ❌ 다크모드 강제 적용 방지 */
+/* 이 부분 완전히 제거해야 함 */
+/* 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
 }
+*/
 
-body {
-  background: var(--background);
-  color: var(--foreground);
+/* ✔ 라이트 테마 강제 적용 */
+html, body {
+  background-color: #fdfbf6 !important;
+  color: #171717 !important;
   font-family: Arial, Helvetica, sans-serif;
 }
